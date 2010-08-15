@@ -113,6 +113,28 @@ crane.s3
 	_  (.close ois)]
     obj))
 
+(defn append [xs]
+  (let [root (first xs)]
+    (cond
+     (string? root) (apply str xs) 
+     (map? root) (apply merge xs)
+     (vector? root) (vec (apply concat xs))
+     :else (apply concat xs))))
+
+;;TODO: the high throughput way is to do eventual appendes, keep writing and periodiucly roll up via some compactor service.
+;;read in root and individual appends.
+;;append
+;;write out append to 3rd location.
+;;move append to primary location
+;;delete individual appends.
+(defn append-str [s3 bucket-name key data]
+  (let [old (get-str s3 bucket-name key)]
+    (put-str s3 bucket-name key (append [old data]))))
+
+(defn append-clj [s3 bucket-name key data]
+  (let [old (get-clj s3 bucket-name key)]
+    (put-clj s3 bucket-name key (append [old data]))))
+
 (defn files [dir]
   (for [file (file-seq (File. dir))
 	      :when (.isFile file)]
