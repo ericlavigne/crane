@@ -19,10 +19,13 @@
 (defn delete-queue [#^QueueService queue]
   (.deleteQueue queue))
 
-(defn connect  [{key :key secret-key :secretkey} name]
-  (SQSUtils/connectToQueue
-   name
-   key secret-key))
+(defn connect
+  ([conf name]
+     (connect (assoc conf :qname name) ))
+  ([{key :key secret-key :secretkey qname :qname}]
+     (SQSUtils/connectToQueue
+      qname
+      key secret-key)))
 
 (defn recieve-msg
   ([queue]

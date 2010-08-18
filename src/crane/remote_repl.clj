@@ -15,7 +15,8 @@ http://clojure101.blogspot.com/2009/05/creating-clojure-repl-in-your.html
  (:import [java.net ServerSocket Socket SocketException]
 	  [java.io InputStreamReader OutputStreamWriter]
 	  [clojure.lang LineNumberingPushbackReader])
- (:use [clojure.contrib shell-out server-socket duck-streams])
+ (:use [clojure.contrib shell-out server-socket])
+ (:require [clojure.contrib.duck-streams :as ds])
  (:use clj-ssh.ssh)
  (:use crane.ec2))
 
@@ -59,8 +60,8 @@ a perhaps better implimentation would be:
 ...but the read function blows up when the stream contains java objects that have been printed #< > or exceptions.
 "
   [socket expr]
-  (let [in (reader (.getInputStream socket))
-	wtr (writer (.getOutputStream socket))]
+  (let [in (ds/reader (.getInputStream socket))
+	wtr (ds/writer (.getOutputStream socket))]
     (binding [*out* wtr]
       (prn expr)
       (flush)

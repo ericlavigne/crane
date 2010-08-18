@@ -36,6 +36,10 @@
 
 (defn get-bytes [x] (.getBytes x))
 
+(defn to-ec2-conf [config]
+    (merge config
+	   {:instance-type ((:instance-type config) instance-types)}))
+
 (defn conf
   "provide the path to your config info directory containing aws.clj
 for now just ami:
@@ -48,8 +52,7 @@ useage: (read-string (slurp* (conf \"/foo/bar/creds/\"))))
   [path]
   (let [config (read-string 
 		(ds/slurp* (ds/file-str path "aws.clj")))]
-    (merge config
-	   {:instance-type ((:instance-type config) instance-types)})))
+    (to-ec2-conf config)))
 
 (defn init-remote
 "

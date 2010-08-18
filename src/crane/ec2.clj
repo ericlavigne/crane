@@ -7,7 +7,7 @@ http://code.google.com/p/typica/wiki/TypicaSampleCode
 javadoc
 http://typica.s3.amazonaws.com/index.html)
 
-You can not block on isRunning from an instance becasue the instance is not re-polling the server for status, the status that an in memory instance seems to ahve is based on the time the instance object was instantiated, not what is happenign right now.
+You can not block on isRunning from an instance because the instance is not re-polling the server for status, the status that an in memory instance seems to have is based on the time the instance object was instantiated, not what is happenign right now.
 "}
   crane.ec2
   (:use clojure.contrib.shell-out)
@@ -20,8 +20,6 @@ You can not block on isRunning from an instance becasue the instance is not re-p
 	    ImageType EC2Exception
 	    ReservationDescription
 	    ReservedInstances]))
-
-;;TODO: everyhting taking a so-called "cluster name" is really just a group in ec2 terms and should be renamed to group.
 
 (defn ec2 [{key :key secretkey :secretkey}]
   (Jec2. key secretkey)) 
@@ -49,18 +47,20 @@ You can not block on isRunning from an instance becasue the instance is not re-p
 (defn describe-security-group [ec2 group]
   (filter #(= group (.getName %)) (describe-security-groups ec2)))
 
-;;TODO: .deleteSecurityGroup
-
-;;TODO: must be followed up by authing prots and such
-;; (auth-group-with-id ec "repl" "repl" "")
-;; (auth-ports ec "repl" "tcp" 22 22 "0.0.0.0/0")
 (defn create-security-group 
   [ec2 #^String name #^String desc]
   (.createSecurityGroup ec2 name desc))
 
-(defn auth-ports [ec2 name protocol from-port to-port cidr-ip]
-  (.authorizeSecurityGroupIngress ec2 name protocol 
-				  from-port to-port cidr-ip))
+(defn delete-security-group 
+  [ec2 #^String name]
+  (.deleteSecurityGroup ec2 name))
+
+(defn auth-ports
+"(ec2/auth-ports ec \"default\" \"tcp\" 22 22 \"0.0.0.0/0\")"
+([ec2 group port] (auth-ports ec2 group "tcp" port port "0.0.0.0/0"))
+([ec2 group protocol from-port to-port cidr-ip]
+  (.authorizeSecurityGroupIngress ec2 group protocol 
+				  from-port to-port cidr-ip)))
 
 (defn auth-group-with-id [ec2 name security-group id]
   (.authorizeSecurityGroupIngress ec2 name security-group id))
@@ -85,10 +85,20 @@ You can not block on isRunning from an instance becasue the instance is not re-p
 (defn shutting-down? [x] 
   (.isShuttingDown x))
 
+(defn instance-ids [reservations]
+  (flatten (map 
+   (fn [res] 
+     (map #(.getInstanceId %) (.getInstances res))) 
+   reservations)))
+
 (defn terminate-instances 
   "usage: (terminate-instances ec (instance-ids (describe-instances ec)))"
   [ec2 instances]
   (.terminateInstances ec2 (into-array String instances)))
+
+(defn kill-all [ec2]
+  (terminate-instances
+   ec2 (instance-ids (describe-instances ec2))))
 
 (defn console-output [ec2 id]
   (.getConsoleOutput ec2 id))
@@ -144,12 +154,6 @@ You can not block on isRunning from an instance becasue the instance is not re-p
    running?
    (find-reservations ec2 cluster)))
 
-(defn instance-ids [reservations]
-  (flatten (map 
-   (fn [res] 
-     (map #(.getInstanceId %) (.getInstances res))) 
-   reservations)))
-
 (defn already-running? 
   "takes ec2 and cluster a cluster name.
 
@@ -176,13 +180,13 @@ it is returning the single first instance, maybe it should return all instances?
 		   (count (running-instances ec2 cluster))
 		   " of " n 
 		   " instances are up in " cluster)
-	 (Thread/sleep 10000))
+	 (Thread/sleep 5000))
        (println "instances started...")
        ;;TODO: is there some kind of while-let so we don't need to find master a second time.
        (running-instances ec2 cluster))))
 
 (defn ec2-instances 
-  "launching an instance with an open repl session over ssh."
+"Launch cluster of k instances where k is specified by :instances in the conf map.  Cluster instances are in the same group as specified by :group in the conf map."
   [ec2 conf]
   (let [group-name (:group conf)
 	cred (creds (:creds conf))
@@ -205,23 +209,14 @@ it is returning the single first instance, maybe it should return all instances?
        ec2 
        (merge conf {:instances 1})))))
 
-;; ssh2 args [string private-key string username string hostname]
-
-;; block until connected:
-;; the recursion of block-until-connected has been moved to this fn
-;; since deprecating crane.ssh2.  if something is wrong it could be
-;; stuck in an infinite loop.
-
-(defn ec2-session 
-  "launching an instance with an open repl session over ssh."
-  [ec2 conf]
-  (with-ssh-agent []
-    (add-identity (:private-key-path (creds (:creds conf))))
-    (let [machine (ec2-instance ec2 conf)
-          session (session (:public (attributes machine)) :username "root")]
-      (while (not (connected? session)) 
-        (try (connect session)
-             (catch com.jcraft.jsch.JSchException e
-               (println "Waiting for session to connect...")
-               (Thread/sleep 10000)
-               (ec2-session ec2 conf)))))))
+(defn in-ec2-session 
+  "ssh session to ec2 instance."
+  [instance conf f]
+  (let [cred (creds (:creds conf))]
+    (with-ssh-agent []
+      (add-identity (:private-key-path cred))
+      (let [inst (:public (attributes instance))
+	    session (session inst :username (or (:user cred) "root")
+			     :strict-host-key-checking :no)]
+	    (with-connection session
+	      (f session))))))

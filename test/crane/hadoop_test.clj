@@ -1,7 +1,7 @@
-(ns crane.cluster-test
+(ns crane.hadoop-test
   (:require (clojure.contrib [duck-streams :as ds] [java-utils :as ju]))
   (:use clojure.test
-        crane.cluster))
+        crane.hadoop))
 
 
 (def conf-map
