@@ -33,8 +33,8 @@
   ([queue n]
      (.receiveMessages queue count)))
 
-(defn delete-message [queue m]
-  (.deleteMessage queue m))
+(defn delete-message [queue message-or-handle]
+  (.deleteMessage queue message-or-handle))
 
 (defn send-msg [queue msg]
   (.sendMessage queue msg))

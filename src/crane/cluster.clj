@@ -16,14 +16,12 @@
   (Socket. node 8080))
 
 (defn push
-  "takes a session, from, and to, sessions and pushes, or session-from-to triples.  sftp puts from->to."
-  ([session from to] (push [[session from to]]))
-  ([session pushes]
-  (let [channel (ssh-sftp session)]
-    (with-connection channel
-      (doall (pmap (fn [[from to]]
+  "takes a session, from, and to, channel-from-to triples.  sftp puts from->to."
+  ([channel from to] (push [[channel from to]]))
+  ([channel pushes]
+      (doall (map (fn [[from to]]
 		     (sftp channel :put from to))
-		   pushes))))))
+		   pushes))))
 
 (defn push-files [sessions pushes]
   (push sessions (map 
