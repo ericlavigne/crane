@@ -27,17 +27,42 @@
       qname
       key secret-key)))
 
+(defn delete-message [queue message-or-handle]
+  (.deleteMessage queue message-or-handle))
+
+(defn send-msg [queue msg]
+  (.sendMessage queue msg))
+
+(defn send-pkg
+  "creates n paritions of a seq s and sends the parititons as messages."
+  [q s n]
+  (let [p (/ (count s) n)]
+  (doall (map #(send-msg q (pr-str %))
+	      (partition p p [] s)))))
+
 (defn recieve-msg
   ([queue]
      (.receiveMessage queue))
   ([queue n]
      (.receiveMessages queue count)))
 
-(defn delete-message [queue message-or-handle]
-  (.deleteMessage queue message-or-handle))
+;;TODO: this with-msg is a little funky...it exists so consuders of the processed body can then delete the message from the queue.
+;;work it out based on use cases from fetcher and crawler.
+(defn with-msg [f]
+  (fn [msg]
+    (let [body (.getMessageBody msg)
+	  id (.getMessageId msg)
+	  handle (.getReceiptHandle msg)]
+      [[id handle body] (f body)])))
 
-(defn send-msg [queue msg]
-  (.sendMessage queue msg))
+(defn consume-msg [q]
+  (let [msg (recieve-msg q)
+	body (.getMessageBody msg)
+	handle (.getReceiptHandle msg)
+	_  (delete-message q handle)]
+    body))
+
+(def consume-pkg (comp read-string consume-msg)) 
 
 (defn message-body [m]
   (.getMessageBody m))
