@@ -36,9 +36,18 @@
 (defn send-pkg
   "creates n paritions of a seq s and sends the parititons as messages."
   [q s n]
-  (let [p (/ (count s) n)]
+  (let [p (Math/ceil (/ (count s) n))]
   (doall (map #(send-msg q (pr-str %))
 	      (partition p p [] s)))))
+
+(defn msg-part
+  "partitions a seq based on a maximum messages size in KB."
+  [s kb]
+  (let [sb (/ (count (.getBytes (pr-str s)))
+	      1024)
+	p (Math/ceil (/ (count s)
+			(Math/ceil (/ sb kb))))]
+    (partition p p [] s)))
 
 (defn recieve-msg
   ([queue]

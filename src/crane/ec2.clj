@@ -19,6 +19,7 @@ You can not block on isRunning from an instance because the instance is not re-p
 	    InstanceType LaunchConfiguration
 	    ImageType EC2Exception
 	    ReservationDescription
+	    ReservationDescription$Instance
 	    ReservedInstances]))
 
 (defn ec2 [{key :key secretkey :secretkey}]
@@ -85,11 +86,15 @@ You can not block on isRunning from an instance because the instance is not re-p
 (defn shutting-down? [x] 
   (.isShuttingDown x))
 
-(defn instance-ids [reservations]
-  (flatten (map 
-   (fn [res] 
-     (map #(.getInstanceId %) (.getInstances res))) 
-   reservations)))
+(defn instance-ids
+"gets the instance ids from a seq of instances or reservations."
+[xs]
+  (let [inst (if (instance? ReservationDescription$Instance (first xs))
+	       xs
+	       (flatten (map 
+			 #(.getInstances %)
+			 xs)))]
+    (map #(.getInstanceId %) inst)))
 
 (defn terminate-instances 
   "usage: (terminate-instances ec (instance-ids (describe-instances ec)))"
