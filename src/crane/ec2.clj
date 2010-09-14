@@ -92,7 +92,7 @@ You can not block on isRunning from an instance because the instance is not re-p
   (let [inst (if (instance? ReservationDescription$Instance (first xs))
 	       xs
 	       (flatten (map 
-			 #(.getInstances %)
+			 #(into [] (.getInstances %))
 			 xs)))]
     (map #(.getInstanceId %) inst)))
 
