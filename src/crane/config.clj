@@ -73,3 +73,43 @@ useage: (read-string (slurp* (creds \"/foo/bar/creds/\"))))
 
 "
 [path] (read-string (ds/slurp* (ds/file-str path "creds.clj"))))
+
+;;TODO: belongs in a seperate project for transformations.  duplicated from infer.features
+(defn flatten-seqs
+  "Takes any nested combination of sequential things (lists, vectors,
+  etc.) and returns the lowest level sequential items as a sequence of sequences."
+  [x]
+  (let [contains-seq? (partial some sequential?)]
+    (filter (complement contains-seq?)
+	    (rest (tree-seq contains-seq? seq x)))))
+
+(defn replace-keys
+"replace any keywords in s with the v at the k in s."
+[m s]
+(into [] (map #(if (keyword? %) (% m) %) s)))
+
+;;TODOD: flatten all but last.
+;;extract and test these fns.
+(defn expand-pushes [c]
+  (let [pushes (:push c)
+	new-pushes (map (fn [p]
+	       (if (not (coll? (first p)))
+		 (replace-keys c p)
+		 (let [froms (first p)
+		       [to] (replace-keys c [(second p)])
+		       ps (map vector
+			       (replace-keys c froms)
+			       (repeat to))]
+		   ps)))
+	     pushes)
+	new-conf (assoc c :push (flatten-seqs new-pushes))]
+    new-conf))
+
+(defn expand-cmds [c]
+  (let [cmds (:cmds c)
+	new-cmds (map (fn [co]
+			(if (string? co) co
+			    (apply str (replace-keys c co))))
+		      cmds)
+	new-conf (assoc c :cmds new-cmds)]
+    new-conf))
