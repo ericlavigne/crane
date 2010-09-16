@@ -18,5 +18,5 @@
 	 (expand-pushes {:push [[["l" "l"] "r"]]}))))
 
 (deftest expand-cmd-test
-  (is (= {:c "ls " :cmds ["ls foo"]}
-	 (expand-cmds {:c "ls " :cmds [[:c "foo"]]}))))
+  (is (= {:c "ls " :run ["ls foo"] :install []}
+	 (expand-cmds {:c "ls " :run [[:c "foo"]]}))))

@@ -122,11 +122,19 @@ useage: (read-string (slurp* (creds \"/foo/bar/creds/\"))))
 	new-conf (assoc c :push new-pushes)]
     new-conf))
 
-(defn expand-cmds [c]
-  (let [cmds (:cmds c)
-	new-cmds (map (fn [co]
-			(if (string? co) co
-			    (apply str (replace-keys c co))))
-		      cmds)
-	new-conf (assoc c :cmds new-cmds)]
-    new-conf))
+(defn expand-cmds
+  [conf*]
+  (let [cs [:install :run]
+	rep (fn [conf c]
+	      (let [cmds (c conf)
+		    new-cmds (map (fn [co]
+				    (if (string? co) co
+					(apply str (replace-keys conf co))))
+				  cmds)
+		    new-conf (assoc conf c new-cmds)]
+		new-conf))
+	fix-all (fn [ks cnf]
+		  (if (empty? ks) cnf
+		      (recur (rest ks) (rep cnf (first ks)))))]
+
+    (fix-all cs conf*)))
