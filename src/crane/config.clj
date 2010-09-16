@@ -61,6 +61,10 @@ hadoop-ec2-init-remote.sh
 "
 [path] (ds/file-str path "hadoop-ec2-init-remote.sh"))
 
+(defn mk-path [& args]
+  (apply str (conj (into [] (map #(if (.endsWith % "/") % (str % "/"))
+		  (butlast args))) (last args))))
+
 (defn creds 
 "provide the path to your creds home directory containing creds.clj
 key secrey-key pair stored in map as:
@@ -72,7 +76,7 @@ key secrey-key pair stored in map as:
 useage: (read-string (slurp* (creds \"/foo/bar/creds/\"))))
 
 "
-[path] (read-string (ds/slurp* (ds/file-str path "creds.clj"))))
+[path] (read-string (ds/slurp* (mk-path path "creds.clj"))))
 
 ;;TODO: belongs in a seperate project for transformations.  duplicated from infer.features
 (defn flatten-seqs
@@ -88,21 +92,34 @@ useage: (read-string (slurp* (creds \"/foo/bar/creds/\"))))
 [m s]
 (into [] (map #(if (keyword? %) (% m) %) s)))
 
+(defn wildcard-dir [d]
+  (if (.isDirectory (java.io.File. d))
+	  (str d "*")
+	  d))
+
+(defn wildcards [pushes]
+  (map (fn [[from to]]
+	 [(wildcard-dir from) to])
+       pushes))
+
 ;;TODOD: flatten all but last.
 ;;extract and test these fns.
 (defn expand-pushes [c]
   (let [pushes (:push c)
-	new-pushes (map (fn [p]
-	       (if (not (coll? (first p)))
-		 (replace-keys c p)
-		 (let [froms (first p)
-		       [to] (replace-keys c [(second p)])
-		       ps (map vector
-			       (replace-keys c froms)
-			       (repeat to))]
-		   ps)))
-	     pushes)
-	new-conf (assoc c :push (flatten-seqs new-pushes))]
+	new-pushes
+;;	(wildcards
+	 (flatten-seqs
+	  (map (fn [p]
+		 (if (not (coll? (first p)))
+		   (replace-keys c p)
+		   (let [froms (first p)
+			 [to] (replace-keys c [(second p)])
+			 ps (map vector
+				 (replace-keys c froms)
+				 (repeat to))]
+		     ps)))
+	       pushes))
+	new-conf (assoc c :push new-pushes)]
     new-conf))
 
 (defn expand-cmds [c]
