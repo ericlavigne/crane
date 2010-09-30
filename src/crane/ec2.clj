@@ -66,6 +66,11 @@ You can not block on isRunning from an instance because the instance is not re-p
 (defn auth-group-with-id [ec2 name security-group id]
   (.authorizeSecurityGroupIngress ec2 name security-group id))
 
+(defn create-work-group [ec g]
+  (do 
+    (ec2/create-security-group ec g g)
+    (ec2/auth-ports ec g 22)))
+
 (defn create-keypair
   "Creates a public/private keypair."
   [ec2 #^String name] 
