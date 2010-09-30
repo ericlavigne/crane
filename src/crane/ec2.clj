@@ -68,8 +68,8 @@ You can not block on isRunning from an instance because the instance is not re-p
 
 (defn create-work-group [ec g]
   (do 
-    (ec2/create-security-group ec g g)
-    (ec2/auth-ports ec g 22)))
+    (create-security-group ec g g)
+    (auth-ports ec g 22)))
 
 (defn create-keypair
   "Creates a public/private keypair."

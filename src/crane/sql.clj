@@ -81,8 +81,9 @@
      ; one for each record in the result set. 
      (into [] rs))))
 
-(defroutes sql-app
-  (GET "/hi" [] "<h1>Hello World Wide Web!</h1>")
-  (GET "/json" [] (encode-to-str [{:foo "bar"} {:bar "baz"}]))
-  (GET "/blogs" []
-       (json-with-dates (blogs prod-db) :published)))
+
+ ;; (defroutes sql-app
+ ;;  (GET "/hi" [] "<h1>Hello World Wide Web!</h1>")
+ ;;  (GET "/json" [] (encode-to-str [{:foo "bar"} {:bar "baz"}]))
+ ;;  (GET "/blogs" []
+ ;;       (json-with-dates (blogs prod-db) :published)))

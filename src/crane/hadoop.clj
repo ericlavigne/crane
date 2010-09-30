@@ -23,7 +23,7 @@ Optional keys in config {}
 crane.hadoop
  (:require [clojure.zip :as zip])
  (:require [clojure.contrib.duck-streams :as ds])
- (:use crane.cluster)
+ (:use crane.core)
  (:use clojure.contrib.java-utils)
  (:use clj-ssh.ssh)
  (:use clojure.xml)
