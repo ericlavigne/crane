@@ -32,23 +32,30 @@
 (sh "rsync" "-avz" from (str user "@" host ":" to)))
 
 (defn bootstrap
-"bootstraps a machine.
+  "bootstraps a machine.
  takes a config and creds map, and...
 -installs packages from apt
 -pushes artifacts to the machine
 -runs programs"
   [conf cred]
     (with-ssh-agent []
-      (add-identity (:private-key-path cred))
-      (let [session (session (:host conf)
-			     :username (:user cred)
-			     :strict-host-key-checking :no)]
-	(with-connection session
-	  (do
-	    (dorun (map #(ssh session :in %)
-	    		(:install conf)))
-	    (dorun (map #(rsync (:host conf)
-	    			(:user cred) %)
-	    		(:push conf)))
-	    (dorun (map #(ssh session :in %)
-			(:run conf))))))))
+    (add-identity (:private-key-path cred))
+    (let [session (session (:host conf)
+			   :username (:user cred)
+			   :strict-host-key-checking :no)]
+      (with-connection session
+	(do
+	  (dorun (map #(ssh session :in %)
+		      (:install conf)))
+	  (dorun (map #(rsync (:host conf)
+			      (:user cred) %)
+		      (:push conf)))
+	  (dorun (map #(ssh session :in %)
+		      (:run conf))))))))
+
+;;TODO: hack to run target fns in deploy.clj on server machines since we use lein for client.  figure out a better option.  currently required to go at bottom of deploy.clj
+(defmacro end-targets
+  []
+  `(doall (map
+         #((ns-resolve *ns* (symbol %)))
+         *command-line-args*)))
