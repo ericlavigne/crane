@@ -39,6 +39,12 @@ crane.s3
 (defn create-bucket [s3 bucket-name]
   (.createBucket s3 bucket-name))
 
+(defn delete-bucket [s3 bucket-name]
+  (.deleteBucket s3 bucket-name))
+
+(defn delete-object [s3 bucket-name key]
+  (.deleteObject s3 bucket-name key))
+
 (defn mkdir [path] (.mkdir (File. path)))
 
 (defn put-file
