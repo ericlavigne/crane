@@ -88,7 +88,7 @@ useage: (read-string (slurp* (creds \"/foo/bar/creds/\"))))
 	    (rest (tree-seq contains-seq? seq x)))))
 
 (defn replace-keys
-"replace any keywords in s with the v at the k in s."
+"replace any keywords in s with the v at the k in m."
 [m s]
 (into [] (map #(if (keyword? %) (% m) %) s)))
 
@@ -107,15 +107,17 @@ useage: (read-string (slurp* (creds \"/foo/bar/creds/\"))))
 (defn expand-pushes [c]
   (let [pushes (:push c)
 	new-pushes
-;;	(wildcards
 	 (flatten-seqs
 	  (map (fn [p]
 		 (if (not (coll? (first p)))
 		   (replace-keys c p)
 		   (let [froms (first p)
 			 [to] (replace-keys c [(second p)])
-			 ps (map vector
-				 (replace-keys c froms)
+			 ps (map (fn [from to]
+				   (let [fr (if (string? from) from
+						(apply str (replace-keys c from)))]
+				   [fr to]))
+				 froms
 				 (repeat to))]
 		     ps)))
 	       pushes))
@@ -138,3 +140,28 @@ useage: (read-string (slurp* (creds \"/foo/bar/creds/\"))))
 		      (recur (rest ks) (rep cnf (first ks)))))]
 
     (fix-all cs conf*)))
+
+(defn expand-local-creds [conf*]
+  (let [expanded (apply str (replace-keys conf* (:local-creds conf*)))]
+    (assoc conf* :local-creds expanded)))
+
+(defn this-path [] (.getCanonicalPath (java.io.File. ".")))
+(defn rooted [path] (str (this-path) path))
+(defn path-exists? [path] (.exists (java.io.File. path)))
+
+(defn read-conf [l s]
+ (merge {:local-root (this-path)}
+    (read-string
+     (slurp
+      (if (path-exists? l)
+	l s)))))
+
+ (defn expand-conf [local server]
+   ((comp expand-cmds expand-pushes expand-local-creds read-conf)
+    (rooted local) server))
+
+(defn creds-path [conf]
+  (let [c (:local-creds conf)]
+    (if (path-exists? c)
+      c
+      (:server-creds conf))))
