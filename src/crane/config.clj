@@ -7,6 +7,10 @@
 	    ReservationDescription
 	    ReservedInstances]))
 
+(defn this-path [] (.getCanonicalPath (java.io.File. ".")))
+(defn rooted [path] (str (this-path) path))
+(defn path-exists? [path] (.exists (java.io.File. path)))
+
 (def instance-types
  {:m1.small InstanceType/DEFAULT
   :m1.large InstanceType/LARGE           
@@ -65,6 +69,12 @@ hadoop-ec2-init-remote.sh
   (apply str (conj (into [] (map #(if (.endsWith % "/") % (str % "/"))
 		  (butlast args))) (last args))))
 
+(defn creds-path [conf]
+  (let [c (:local-creds conf)]
+    (if (path-exists? c)
+      c
+      (:server-creds conf))))
+
 (defn creds 
 "provide the path to your creds home directory containing creds.clj
 key secrey-key pair stored in map as:
@@ -76,7 +86,10 @@ key secrey-key pair stored in map as:
 useage: (read-string (slurp* (creds \"/foo/bar/creds/\"))))
 
 "
-[path] (read-string (ds/slurp* (mk-path path "creds.clj"))))
+[cred]
+(let [path (if (map? cred) (creds-path cred)
+	       cred)]
+  (read-string (ds/slurp* (mk-path path "creds.clj")))))
 
 ;;TODO: belongs in a seperate project for transformations.  duplicated from infer.features
 (defn flatten-seqs
@@ -145,10 +158,6 @@ useage: (read-string (slurp* (creds \"/foo/bar/creds/\"))))
   (let [expanded (apply str (replace-keys conf* (:local-creds conf*)))]
     (assoc conf* :local-creds expanded)))
 
-(defn this-path [] (.getCanonicalPath (java.io.File. ".")))
-(defn rooted [path] (str (this-path) path))
-(defn path-exists? [path] (.exists (java.io.File. path)))
-
 (defn read-conf [l s]
  (merge {:local-root (this-path)}
     (read-string
@@ -156,12 +165,6 @@ useage: (read-string (slurp* (creds \"/foo/bar/creds/\"))))
       (if (path-exists? l)
 	l s)))))
 
- (defn expand-conf [local server]
+(defn expand-conf [local server]
    ((comp expand-cmds expand-pushes expand-local-creds read-conf)
     (rooted local) server))
-
-(defn creds-path [conf]
-  (let [c (:local-creds conf)]
-    (if (path-exists? c)
-      c
-      (:server-creds conf))))
