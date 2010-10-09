@@ -136,14 +136,24 @@ useage: (read-string (slurp* (creds \"/foo/bar/creds/\"))))
 	new-conf (assoc c :push new-pushes)]
     new-conf))
 
+(defn target-calls [c ts]
+  (apply str
+   (replace-keys c
+		 (flatten
+		  ["java -cp " :server-root "src/:" :server-root "lib/* clojure.main "
+		   :server-root "deploy.clj " (interleave ts (repeat " "))]))))
+
 (defn expand-cmds
   [conf*]
   (let [cs [:install :run]
 	rep (fn [conf c]
 	      (let [cmds (c conf)
 		    new-cmds (map (fn [co]
-				    (if (string? co) co
-					(apply str (replace-keys conf co))))
+				    (cond (string? co) co
+					  (= :targets (first co))
+					  (target-calls conf (rest co))
+					  :else (apply str
+						       (replace-keys conf co))))
 				  cmds)
 		    new-conf (assoc conf c new-cmds)]
 		new-conf))

@@ -27,7 +27,7 @@ web must be a target in our deploy.clj, let's see:
 Here, we are deploying a webserver using crane's bootstrap capabilities.  Config flies are in the same dir as deploy.clj, and you get one by providing the name as a keyword.  Let's look at the config file, and walk through what bootstrap does.
 
       {:group "web"
-       :web-root "/root/learner/"
+       :server-root "/root/learner/"
        :server-creds "/root/learner/aws/"
        :local-creds [:local-root "/../Dropbox/aws/"]
        :user "root"
@@ -36,11 +36,10 @@ Here, we are deploying a webserver using crane's bootstrap capabilities.  Config
        :push [[[[:local-root "/src"]
        	        [:local-root "/lib"]
 		[:local-root "/deploy.clj"]
- 		[:local-root "/webconfig.clj"]] :web-root]
+ 		[:local-root "/webconfig.clj"]] :server-root]
 		[:local-creds "/root/learner/aws"]]
        :run ["killall -9 java"
-             ["java -cp " :web-root "src/:" :web-root "lib/* clojure.main "
- 	     :web-root "deploy.clj server-learner"]]}
+             [:targets "server-learner"]]}
 
 The call to config creates a configuration from the config file corresponding to the keyword argument.  This configuration is used to bootstrap the machine(s) indicated in the config.
 
@@ -54,9 +53,9 @@ Aside from supplying basic configuration attributes like groups, project roots, 
 
 **The push phase rsyncs local and remote files.**  Often you specify a number of files to sync from local locations to a single remote root.  Crane offers shorthand for this by providing a tupel where the first element is a vector of "froms", and the second element is the root, the "to."
 
-Finally, **the run phase runs some commands** - this is where you start a webserver, worker processes, databases, or whatever this service is for.
+[TODO: default pushes should take care of most things.] 
 
-[TODO: explain shorthand for running that calls a target in deploy on the server when we come up with it.]
+Finally, **the run phase runs some commands** - this is where you start a webserver, worker processes, databases, or whatever this service is for.  Notice the shorthand for calling targets from deploy.clj on the server.  Crane moves the appropriate parts of your project structure to the server-root, and runs any targets listed in the :targets vector under :run.
 
 [TODO: give example for work that uses the install phase.]
  
