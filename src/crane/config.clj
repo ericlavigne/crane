@@ -8,7 +8,6 @@
 	    ReservedInstances]))
 
 (defn this-path [] (.getCanonicalPath (java.io.File. ".")))
-(defn rooted [path] (str (this-path) path))
 (defn path-exists? [path] (.exists (java.io.File. path)))
 
 (def instance-types
@@ -164,6 +163,8 @@ useage: (read-string (slurp* (creds \"/foo/bar/creds/\"))))
      (slurp
       (if (path-exists? l)
 	l s)))))
+
+(defn rooted [path] (str (this-path) "/" path))
 
 (defn expand-conf [local server]
    ((comp expand-cmds expand-pushes expand-local-creds read-conf)
