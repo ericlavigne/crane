@@ -24,7 +24,13 @@ web must be a target in our deploy.clj, let's see:
       (let [conf (config :webconfig)]
           (bootstrap conf conf)))
 
-Here, we are deploying a webserver using crane's bootstrap capabilities.  Config flies are in the same dir as deploy.clj, and you get one by providing the name as a keyword.  Let's look at the config file, and walk through what bootstrap does.
+Here, we are deploying a webserver using crane's bootstrap capabilities.
+
+The call to config creates a configuration from the config file corresponding to the keyword argument.  This configuration is used to bootstrap the machine(s) indicated in the config.
+
+Config flies are,  by convention, in /your/projet/root**/crane** in the same dir as deploy.clj, and you get one by providing the name as a keyword.  :web-config -> web_config.clj
+
+Let's look at the config file, and walk through what bootstrap does.
 
       {:group "web"
        :server-root "/root/learner/"
@@ -33,15 +39,8 @@ Here, we are deploying a webserver using crane's bootstrap capabilities.  Config
        :user "root"
        :host "555.555.55.55"
        :private-key-path "/path/to/my/id_rsa"
-       :push [[[[:local-root "/src"]
-       	        [:local-root "/lib"]
-		[:local-root "/deploy.clj"]
- 		[:local-root "/webconfig.clj"]] :server-root]
-		[:local-creds "/root/learner/aws"]]
        :run ["killall -9 java"
-             [:targets "server-learner"]]}
-
-The call to config creates a configuration from the config file corresponding to the keyword argument.  This configuration is used to bootstrap the machine(s) indicated in the config.
+       	    [:targets "server-learner"]]}
 
 [TODO: explain config vs. creds when I finish making the web looks like the aws.]
 
@@ -49,11 +48,11 @@ We have three phases in crane as of now; install, push, and run.
 
 Aside from supplying basic configuration attributes like groups, project roots, and so forth, we are mosly building up vectors of strings of commands to run, or files to rsync.  Notive that there is some special shorthand for self-refnerence within config maps.  Anywhere that you could supply a string, you can supply a vector of strings and keywords, and the keyworkds will be replaced with their corresponding values from the config map.
 
+Notive that we don't seem to have to do much.  Crane can do a lto for us because we stick to simple conventions.  We know you want to sync src/ lib/ and crane/.  We know how to run targets in your deploy file on your machine and the server.  
+
 **The install phase installs packages on your linux distro.**  You supply a vector of  install commands as strings.
 
-**The push phase rsyncs local and remote files.**  Often you specify a number of files to sync from local locations to a single remote root.  Crane offers shorthand for this by providing a tupel where the first element is a vector of "froms", and the second element is the root, the "to."
-
-[TODO: default pushes should take care of most things.] 
+**The push phase rsyncs local and remote files.**  Often you specify a number of files to sync from local locations to a single remote root.  Crane offers shorthand for this by providing a tupel where the first element is a vector of "froms", and the second element is the root, the "to."  Again, notice we don't specify any pushes here because we are following the standard for crane services, whicah takes care for sec/ lib/ and crane/.
 
 Finally, **the run phase runs some commands** - this is where you start a webserver, worker processes, databases, or whatever this service is for.  Notice the shorthand for calling targets from deploy.clj on the server.  Crane moves the appropriate parts of your project structure to the server-root, and runs any targets listed in the :targets vector under :run.
 
