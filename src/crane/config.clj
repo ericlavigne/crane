@@ -114,10 +114,16 @@ useage: (read-string (slurp* (creds \"/foo/bar/creds/\"))))
 	 [(wildcard-dir from) to])
        pushes))
 
+(def default-pushes
+     [[[[:local-root "/src"]
+	[:local-root "/lib"]
+	[:local-root "/crane"]] :server-root]
+      [:local-creds :server-creds]])
+
 ;;TODOD: flatten all but last.
 ;;extract and test these fns.
 (defn expand-pushes [c]
-  (let [pushes (:push c)
+  (let [pushes (concat default-pushes (:push c))
 	new-pushes
 	 (flatten-seqs
 	  (map (fn [p]
@@ -141,7 +147,7 @@ useage: (read-string (slurp* (creds \"/foo/bar/creds/\"))))
    (replace-keys c
 		 (flatten
 		  ["java -cp " :server-root "src/:" :server-root "lib/* clojure.main "
-		   :server-root "deploy.clj " (interleave ts (repeat " "))]))))
+		   :server-root "crane/deploy.clj " (interleave ts (repeat " "))]))))
 
 (defn expand-cmds
   [conf*]
