@@ -1,5 +1,6 @@
 (ns crane.config
   (:require [clojure.contrib.duck-streams :as ds])
+  (:require [clojure.contrib.str-utils2 :as su])
   (:use clojure.contrib.java-utils)
   (:import [com.xerox.amazonws.ec2 Jec2 
 	    InstanceType LaunchConfiguration
@@ -38,57 +39,6 @@
       [["MASTER_HOST" master-host]])))
 
 (defn get-bytes [x] (.getBytes x))
-
-(defn to-ec2-conf [config]
-    (merge config
-	   {:instance-type ((:instance-type config) instance-types)}))
-
-(defn conf
-  "provide the path to your config info directory containing aws.clj
-for now just ami:
- 
- {:ami \"ami-xxxxxx\"}
- 
-useage: (read-string (slurp* (conf \"/foo/bar/creds/\"))))
- 
-"
-  [path]
-  (let [config (read-string 
-		(ds/slurp* (ds/file-str path "aws.clj")))]
-    (to-ec2-conf config)))
-
-(defn init-remote
-"
-provide the path to your hadoop config directory containing 
-hadoop-ec2-init-remote.sh
-"
-[path] (ds/file-str path "hadoop-ec2-init-remote.sh"))
-
-(defn mk-path [& args]
-  (apply str (conj (into [] (map #(if (.endsWith % "/") % (str % "/"))
-		  (butlast args))) (last args))))
-
-(defn creds-path [conf]
-  (let [c (:local-creds conf)]
-    (if (path-exists? c)
-      c
-      (:server-creds conf))))
-
-(defn creds 
-"provide the path to your creds home directory containing creds.clj
-key secrey-key pair stored in map as:
-
- {:key \"AWSKEY\"
-  :secretkey \"AWSSECRETKEY\"}
-  :keyname \"aws rsa key file name\"}
-
-useage: (read-string (slurp* (creds \"/foo/bar/creds/\"))))
-
-"
-[cred]
-(let [path (if (map? cred) (creds-path cred)
-	       cred)]
-  (read-string (ds/slurp* (mk-path path "creds.clj")))))
 
 ;;TODO: belongs in a seperate project for transformations.  duplicated from infer.features
 (defn flatten-seqs
@@ -173,15 +123,76 @@ useage: (read-string (slurp* (creds \"/foo/bar/creds/\"))))
   (let [expanded (apply str (replace-keys conf* (:local-creds conf*)))]
     (assoc conf* :local-creds expanded)))
 
-(defn read-conf [l s]
- (merge {:local-root (this-path)}
-    (read-string
-     (slurp
-      (if (path-exists? l)
-	l s)))))
-
 (defn rooted [path] (str (this-path) "/" path))
 
-(defn expand-conf [local server]
-   ((comp expand-cmds expand-pushes expand-local-creds read-conf)
-    (rooted local) server))
+(defn to-ec2-conf [config]
+    (merge config
+	   {:instance-type ((:instance-type config) instance-types)}))
+
+;;TODO: this is legacy from first iteration hadoop.
+;;change this to match with enw crane conf/vs cred.
+(defn conf
+  "provide the path to your config info directory containing aws.clj
+for now just ami:
+ 
+ {:ami \"ami-xxxxxx\"}
+ 
+useage: (read-string (slurp* (conf \"/foo/bar/creds/\"))))
+ 
+"
+  [path]
+  (let [config (read-string 
+		(ds/slurp* (ds/file-str path "aws.clj")))]
+    (to-ec2-conf config)))
+
+(defn init-remote
+"
+provide the path to your hadoop config directory containing 
+hadoop-ec2-init-remote.sh
+"
+[path] (ds/file-str path "hadoop-ec2-init-remote.sh"))
+
+(defn mk-path [& args]
+  (apply str (conj (into [] (map #(if (.endsWith % "/") % (str % "/"))
+		  (butlast args))) (last args))))
+
+(defn creds-path [conf]
+  (let [c (:local-creds conf)]
+    (if (path-exists? c)
+      c
+      (:server-creds conf))))
+
+(defn to-file [k]
+  (str (.replaceAll (su/drop (str k) 1) "-" "_") ".clj"))
+
+(defn creds 
+"provide the path to your creds home directory.  creds.clj is the default, provide keys otherwise.
+"
+([cred] (creds cred :creds))
+([cred k]
+(let [path (if (map? cred) (creds-path cred)
+	       cred)]
+  (read-string (ds/slurp* (mk-path path (to-file k)))))))
+
+(defn config-path [k]
+  (mk-path (this-path) "crane" (to-file k)))
+
+(defn slurp-config [k]
+  ;;DEFAULT local root
+  ;;DEFAULT creds path
+  (let [c 
+	(read-string
+	 (slurp (config-path k)))]
+    (merge {:local-root (this-path)
+	    :server-creds (mk-path (:server-root c) "creds/")}
+	   c)))
+
+(defn config [k]
+  ((comp expand-cmds expand-pushes expand-local-creds slurp-config) k))
+
+(defn conf-cred
+([k] (conf-cred k k)) 
+([config-key cred-key]
+  (let [conf (config config-key)
+	cred (creds conf cred-key)]
+    [conf cred])))

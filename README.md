@@ -16,17 +16,16 @@ crane has a leiningen plugin, so we'll add that with the crane dependency in our
 
 Add a deploy.clj file at project's root (right next to your project.clj)  You can call no-arg functions in you deploy.clj as targets using crane.
 
-lein crane web
+     lein crane web
 
 web must be a target in our deploy.clj, let's see:
 
     (defn web []
-      (let [conf (config :webconfig)]
-          (bootstrap conf conf)))
+          (bootstrap :webconfig :webcreds)))
 
 Here, we are deploying a webserver using crane's bootstrap capabilities.
 
-The call to config creates a configuration from the config file corresponding to the keyword argument.  This configuration is used to bootstrap the machine(s) indicated in the config.
+The call to bootstrap calls config and creds, reading in a config and cred map from the config/cred files corresponding to the keyword arguments.  This configuration is used to bootstrap the machine(s) indicated in the config.
 
 Config flies are,  by convention, in /your/projet/root**/crane** in the same dir as deploy.clj, and you get one by providing the name as a keyword.  :web-config -> web_config.clj
 
@@ -35,14 +34,16 @@ Let's look at the config file, and walk through what bootstrap does.
       {:group "web"
        :server-root "/root/learner/"
        :server-creds "/root/learner/aws/"
-       :local-creds [:local-root "/../Dropbox/aws/"]
-       :user "root"
+       :local-creds [:local-root "/../Dropbox/creds/"]
        :host "555.555.55.55"
-       :private-key-path "/path/to/my/id_rsa"
        :run ["killall -9 java"
        	    [:targets "server-learner"]]}
 
-[TODO: explain config vs. creds when I finish making the web looks like the aws.]
+
+Creds just contains usernames, passwords, keyfile locations, etc.  These are stored in some seperate directory that you supply in the :local-creds slot of the config map.  As you can see, we just store shared deploy creds in a shared dropbox. 
+
+      {:user "root"
+       :private-key-path "/path/to/my/id_rsa"}
 
 We have three phases in crane as of now; install, push, and run.
 

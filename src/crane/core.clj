@@ -37,21 +37,27 @@
 -installs packages from apt
 -pushes artifacts to the machine
 -runs programs"
-  [conf cred]
-    (with-ssh-agent []
-    (add-identity (:private-key-path cred))
-    (let [session (session (:host conf)
-			   :username (:user cred)
-			   :strict-host-key-checking :no)]
-      (with-connection session
-	(do
-	  (dorun (map #(ssh session :in %)
-		      (:install conf)))
-	  (dorun (map #(rsync (:host conf)
-			      (:user cred) %)
-		      (:push conf)))
-	  (dorun (map #(ssh session :in %)
-		      (:run conf))))))))
+  ([k] (apply bootstrap (conf-cred k)))
+  ([conf cred]
+     (if (or (keyword? conf)
+	     (keyword? cred))
+       (apply bootstrap (conf-cred conf cred))
+       (do 
+	 (println (:private-key-path cred) (:user cred) (:host conf))
+       (with-ssh-agent []
+	 (add-identity (:private-key-path cred))
+	 (let [session (session (:host conf)
+				:username (:user cred)
+				:strict-host-key-checking :no)]
+	   (with-connection session
+	     (do
+	       (dorun (map #(ssh session :in %)
+			   (:install conf)))
+	       (dorun (map #(rsync (:host conf)
+				   (:user cred) %)
+			   (:push conf)))
+	       (dorun (map #(ssh session :in %)
+			   (:run conf)))))))))))
 
 ;;TODO: hack to run target fns in deploy.clj on server machines since we use lein for client.  figure out a better option.  currently required to go at bottom of deploy.clj
 (defmacro end-targets

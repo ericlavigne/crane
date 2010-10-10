@@ -8,5 +8,5 @@
                  [remote-repl "0.0.1-SNAPSHOT"]
 		 [clj-ssh "0.2.0-SNAPSHOT"]
 		 [clj-serializer "0.1.0"]]
-  :dev-dependencies [[swank-clojure "1.2.1"]
+  :dev-dependencies [[swank-clojure "1.3.0-SNAPSHOT"]
 		     [lein-clojars "0.5.0"]])
