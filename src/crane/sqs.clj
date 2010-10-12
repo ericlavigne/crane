@@ -49,7 +49,7 @@
 			(Math/ceil (/ sb kb))))]
     (partition p p [] s)))
 
-(defn recieve-msg
+(defn receive-msg
   ([queue]
      (.receiveMessage queue))
   ([queue n]
