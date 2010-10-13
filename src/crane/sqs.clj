@@ -49,7 +49,7 @@
 			(Math/ceil (/ sb kb))))]
     (partition p p [] s)))
 
-(defn recieve-msg
+(defn receive-msg
   ([queue]
      (.receiveMessage queue))
   ([queue n]
@@ -65,7 +65,7 @@
       [[id handle body] (f body)])))
 
 (defn consume-msg [q]
-  (let [msg (recieve-msg q)
+  (let [msg (receive-msg q)
 	body (.getMessageBody msg)
 	handle (.getReceiptHandle msg)
 	_  (delete-message q handle)]
