@@ -230,3 +230,17 @@ it is returning the single first instance, maybe it should return all instances?
 			     :strict-host-key-checking :no)]
 	    (with-connection session
 	      (f session))))))
+
+(defn work-group [conf]
+  (let [cred (creds (:local-creds conf))
+        ec2-conn (ec2 cred)
+        g (:group conf)] 
+    (create-work-group ec2-conn g)))
+
+(defn cluster-confs
+  "Return a sequence of confs for each machine in the cluster."
+  [cluster base-conf]
+  (let [public-ips (map #(:public (attributes %))
+                        cluster)]
+    (map #(assoc base-conf :host %)
+         public-ips)))
