@@ -28,8 +28,7 @@ crane.hadoop
  (:use clj-ssh.ssh)
  (:use clojure.xml)
  (:use clojure.contrib.str-utils)
- (:use crane.ec2)
- (:use crane.s3))
+ (:use crane.ec2))
 
 ;; got xml renderer from http://www.erik-rasmussen.com/blog/2009/09/08/xml-renderer-in-clojure/
 ;; took out html stuff
