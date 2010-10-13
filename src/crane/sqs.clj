@@ -65,7 +65,7 @@
       [[id handle body] (f body)])))
 
 (defn consume-msg [q]
-  (let [msg (recieve-msg q)
+  (let [msg (receive-msg q)
 	body (.getMessageBody msg)
 	handle (.getReceiptHandle msg)
 	_  (delete-message q handle)]
