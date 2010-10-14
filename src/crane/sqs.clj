@@ -64,12 +64,16 @@
 	  handle (.getReceiptHandle msg)]
       [[id handle body] (f body)])))
 
-(defn consume-msg [q]
-  (let [msg (receive-msg q)
-	body (.getMessageBody msg)
-	handle (.getReceiptHandle msg)
-	_  (delete-message q handle)]
-    body))
+(defn consume-msg
+  "Get the body of a message and remove (delete) message on queue.
+  Returns nil if no message was available."
+  [q]
+  (if-let [msg (receive-msg q)]
+    (let [body (.getMessageBody msg)
+          handle (.getReceiptHandle msg)
+          _  (delete-message q handle)]
+      body)
+    nil))
 
 (def consume-pkg (comp read-string consume-msg)) 
 
