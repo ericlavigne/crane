@@ -1,14 +1,15 @@
 (ns 
- crane.core
- (:use clojure.contrib.java-utils)
- (:use clj-ssh.ssh)
- (:use crane.ec2)
- (:use crane.config)
- (:use crane.remote-repl)
- (:use [clojure.java.shell :only [sh]])
- (:import java.io.File)
- (:import java.util.ArrayList)
- (:import java.net.Socket))
+    crane.core
+  (:use [clojure.pprint :only [pprint]])
+  (:use clojure.contrib.java-utils)
+  (:use clj-ssh.ssh)
+  (:use crane.ec2)
+  (:use crane.config)
+  (:use crane.remote-repl)
+  (:use [clojure.java.shell :only [sh]])
+  (:import java.io.File)
+  (:import java.util.ArrayList)
+  (:import java.net.Socket))
 
 (defn socket-repl
 "Socket class, connected to node remote repl"
@@ -54,15 +55,29 @@
                                   :username (:user cred)
                                   :strict-host-key-checking :no)]
              (with-connection session
-               (do
-                 (dorun (map #(ssh session :in %)
-                             (:install conf)))
-                 (dorun (map #(rsync (:private-key-path cred)
-                                     (:host conf)
-                                     (:user cred) %)
-                             (:push conf)))
-                 (dorun (map #(ssh session :in %)
-                             (:run conf)))))))))))
+               #_(do
+                   (dorun (map #(ssh session :in %)
+                               (:install conf)))
+                   (dorun (map #(rsync (:private-key-path cred)
+                                       (:host conf)
+                                       (:user cred) %)
+                               (:push conf)))
+                   (dorun (map #(ssh session :in %)
+                               (:run conf))))
+               (let [install-result (doall (map #(ssh session :in %)
+                                                (:install conf)))
+                     rsync-result (doall (map #(rsync (:private-key-path cred)
+                                                      (:host conf)
+                                                      (:user cred) %)
+                                              (:push conf)))
+                     run-result (doall (map #(ssh session :in %)
+                                            (:run conf)))]
+                 (println "Install results:")
+                 (pprint install-result)
+                 (println "Push results:")
+                 (pprint rsync-result)
+                 (println "Run results:")
+                 (println run-result)))))))))
 
 (defn bootstrap-cluster
   "Bootstrap a cluster of machines from a sequence of configurations."
