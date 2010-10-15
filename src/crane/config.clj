@@ -1,7 +1,9 @@
 (ns crane.config
   (:require [clojure.contrib.duck-streams :as ds])
   (:require [clojure.contrib.str-utils2 :as su])
-  (:use clojure.contrib.java-utils)
+  (:use clojure.contrib.java-utils
+        [clojure.contrib.classpath :only [classpath-directories]]
+        [clojure.contrib.find-namespaces :only [find-namespaces-in-dir]])
   (:import [com.xerox.amazonws.ec2 Jec2 
             InstanceType LaunchConfiguration
             ImageType EC2Exception
@@ -10,6 +12,21 @@
 
 (defn this-path [] (.getCanonicalPath (java.io.File. ".")))
 (defn path-exists? [path] (.exists (java.io.File. path)))
+
+(defn find-ns-dir
+  "Find project root based on location of deploy ns.
+  This is about as ugly as it sounds.  Better ideas for getting project-root
+  to lein-daemon calls?"
+  [ns-name]
+  (let [dirs (classpath-directories)]
+    (first (filter (fn [d] (contains? (set (find-namespaces-in-dir d))
+                                      (symbol ns-name))) 
+                   dirs))))
+
+(defn find-project-root
+  "Return project root path as string."
+  []
+  (.getParent (find-ns-dir "deploy")))
 
 (def instance-types
      {:m1.small InstanceType/DEFAULT
@@ -95,8 +112,13 @@
   (apply str
          (replace-keys c
                        (flatten
-                        ["java -cp " :server-root "src/:" :server-root "lib/* clojure.main "
-                         :server-root "crane/deploy.clj " (interleave ts (repeat " "))]))))
+                        ["java -cp "
+                         :server-root "/crane/:"
+                         :server-root "/src/:"
+                         :server-root "/lib/*:"
+                         :server-root "/lib/dev/* "
+                         "clojure.main "
+                         :server-root "/crane/deploy.clj " (interleave ts (repeat " "))]))))
 
 (defn expand-cmds
   [conf*]
