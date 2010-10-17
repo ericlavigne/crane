@@ -12,7 +12,7 @@ crane has a leiningen plugin, so we'll add that with the crane dependency in our
       [crane "1.0-SNAPSHOT"]
       [crane/lein-crane "0.0.1"]
 
-Add a deploy.clj file at project's root (right next to your project.clj)  You can call no-arg functions in you deploy.clj as targets using crane.
+Add a deploy.clj file in the src directory.  You can call no-arg functions in you deploy.clj as targets using crane.
 
      lein crane web
 
@@ -41,7 +41,7 @@ Finally, **the run phase runs some commands** - this is where you start a webser
 
 ## How do I set up config and creds?
 
-Config flies are,  by convention, in /your/projet/root**/crane** in the same dir as deploy.clj, and you get one by providing the name as a keyword.  :web-config -> web_config.clj
+Add a **crane** directory inside the root of your project. (The project root normally contains directories such as src, test, and lib. Now it will also contain a **crane** directory.) Inside the **crane** directory, place config files with a .clj extension. Config files will be referred to via keywords. For example, if you create a config file called crane/web_config.clj, you will use :web-config to refer to that configuration file.
 
 Let's look at the config file, and walk through what bootstrap does.
 
@@ -71,26 +71,26 @@ Configuration maps:
 
 creds.clj
 
-{:key "AWS-KEY"
- :secretkey "AWS-SECRET-KEY"
- :private-key-path "/path/to/private-key"
- :key-name "key-name"}
+      {:key "AWS-KEY"
+       :secretkey "AWS-SECRET-KEY"
+       :private-key-path "/path/to/private-key"
+       :key-name "key-name"}
 
 conf.clj
 
-{:image "ami-"
- :instance-type :m1.large
- :group "ec2-group"
- :instances int
- :instances int
- :creds "/path/to/creds.clj-dir"
- :push ["/source/path" "/dest/path/file"
-        "/another/source/path" "/another/dest/path/file"]
- :hadooppath "/path/to/hadoop"          ;;used for remote pathing
- :hadoopuser "hadoop-user"              ;;remote hadoop user
- :mapredsite "/path/to/local/mapred"    ;;used as local templates
- :coresite "/path/to/local/core-site"
- :hdfssite "/path/to/local/hdfssite"}
+      {:image "ami-"
+       :instance-type :m1.large
+       :group "ec2-group"
+       :instances int
+       :instances int
+       :creds "/path/to/creds.clj-dir"
+       :push ["/source/path" "/dest/path/file"
+              "/another/source/path" "/another/dest/path/file"]
+       :hadooppath "/path/to/hadoop"          ;;used for remote pathing
+       :hadoopuser "hadoop-user"              ;;remote hadoop user
+       :mapredsite "/path/to/local/mapred"    ;;used as local templates
+       :coresite "/path/to/local/core-site"
+       :hdfssite "/path/to/local/hdfssite"}
 
 Example:
 
